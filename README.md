@@ -1,163 +1,157 @@
-# 📊 Practical Data Analytics with SQL: App Store Analysis
 
-## 📑 Project Description
-This project explores and analyzes a comprehensive **App Store dataset** sourced from Kaggle. Using **SQL** and the **SQLiteOnline** tool, the analysis uncovers valuable insights into app ratings, genres, pricing models, and other key metrics. The primary goal is to provide actionable recommendations for app developers and businesses to create better-performing apps.
+# Sales and Revenue Dashboard
 
----
+## Problem Statement
 
-## 📂 Dataset Information
-- **Source**: [Kaggle](https://www.kaggle.com)
-- **Description**: The dataset includes details about apps in the App Store, such as:
-  - **ID**: Unique app identifier
-  - **Track Name**: App name
-  - **Price**: App price (in USD)
-  - **User Rating**: Average user rating
-  - **Prime Genre**: App genre/category
-  - **Lang Num**: Number of languages supported
-  - **App Desc**: App description
-- **Tool Used**: SQLiteOnline for database import and query execution.
+This dashboard helps the IT company gain deeper insights into sales performance, revenue trends, and customer behavior. By analyzing data across multiple dimensions, such as top-performing markets, customers, products, and regions, it empowers the company to make informed decisions to improve overall business outcomes.
 
----
+Through detailed visualizations, the dashboard identifies revenue drivers and highlights areas needing attention, such as underperforming regions or product categories. It consolidates sales data in multiple currencies into a unified INR-based view, providing clarity and simplifying financial reporting. The trends and breakdowns presented in the dashboard enable the company to create data-driven strategies to maximize revenue and optimize market performance.
 
-## Objectives
 
-1. Perform exploratory data analysis (EDA) to understand the dataset structure and identify key insights.
-2. Answer business questions like:
-   - Do paid apps have higher ratings than free apps?
-   - Which genres have the lowest and highest ratings?
-   - Does the number of languages supported correlate with higher ratings?
-   - Does the length of the app description affect user ratings?
-3. Provide actionable recommendations for app developers based on findings.
+### Steps followed 
 
----
+- Step 1: Connected to the company's MySQL database via Power BI to import sales and revenue data directly.
 
-## 🔍 Exploratory Data Analysis (EDA)
+- Step 2: Loaded the dataset into Power Query Editor, and under the View tab, enabled "Column Distribution," "Column Quality," and "Column Profile" to validate and clean the data.
 
-## SQL Queries and Insights
+- Step 3: Addressed multi-currency values in the dataset:
 
-### 1. **Exploratory Data Analysis**
+    Created a calculated column in Power BI using DAX to convert revenue and sales amounts into INR using predefined exchange rates:
+    DAX
+    Copy code
+    Adjusted Revenue = 
+    SWITCH(
+    [Currency],
+    "USD", [Revenue] * 83,
+    "EUR", [Revenue] * 90,
+    [Revenue] -- Default case for INR or already converted values
+    )
+    Ensured null and blank values were excluded from calculations.
 
-- **Number of Unique Apps**:
-  ```sql
-  SELECT COUNT(DISTINCT(id)) AS uniqueAppIDs
-  FROM AppleStore;
-- Result: 7,197 unique apps.
----
+- Step 4: Designed key visuals in the Report View:
 
-- **Check for Missing Values in Key Fields**:
-  ```sql
-  SELECT COUNT(*) AS MissingValues 
-  FROM AppleStore 
-  WHERE track_name IS NULL OR user_rating IS NULL OR prime_genre IS NULL;
-- Result: No missing values in key fields.
----
+    Two card visuals: Displayed total revenue (₹984.88M) and total sales quantity (2M units).
+    Bar charts: Represented revenue and sales distribution by markets.
+    Line chart: Showcased revenue trends over time (from 2017 to 2020).
+    Bar charts: Highlighted top 5 customers and top 5 products contributing to revenue.
 
-- **Number of Apps Per Genre**:
-  ```sql
-    SELECT prime_genre, COUNT(DISTINCT id) AS NoOfApps
-    FROM AppleStore
-    GROUP BY prime_genre
-    ORDER BY NoOfApps DESC;
-- Insight: The Games genre dominates the App Store in terms of the number of apps.
----
+- Step 5: Added interactive slicers for:
 
-### 2. **Analysis of Ratings**
+    Time period (year, quarter, month).
+    Market/region.
+    Product category.
 
-- **Overview of Ratings**:
-  ```sql
-      SELECT MIN(user_rating) AS Minimum_Rating,
-      MAX(user_rating) AS Maximum_Rating,
-      AVG(user_rating) AS Average_Rating
-      FROM AppleStore;
-- Result:
+- Step 6: Enhanced dashboard design:
 
-      Minimum Rating: 0.0
-      Maximum Rating: 5.0
-      Average Rating: ~3.5
-  ---
+    Used the company’s theme and color palette for branding.
+    Inserted text boxes for the company's name and tagline.
+    Added the company logo in the header.
 
-- **Paid vs Free Apps Ratings**:
-   ```sql
-   SELECT CASE
-             WHEN price > 0 THEN 'Paid'
-             ELSE 'Free'
-             END AS App_Type,
-             AVG(user_rating) AS Average_Rating
-   FROM AppleStore GROUP BY App_Type;
-- Insight: Paid apps have higher average ratings compared to free apps.
+- Step 7: 
+    Published the dashboard to Power BI Service, allowing stakeholders to access it online. Configured automatic data refresh for real-time updates.
+    Snapshot of the Dashboard:
 
----
 
-### 3. **Additional Analysis**
+# Insights
 
-- **Check if Apps with More Languages Have Higher Ratings**:
-  ```sql
-  SELECT CASE
-              WHEN lang_num < 10 THEN '<10 Languages'
-              WHEN lang_num BETWEEN 10 AND 30 THEN '10-30 Languages'
-              ELSE '>30 Languages'
-              END AS Language_Bucket,
-              AVG(user_rating) AS Avg_Rating
-  FROM AppleStore
-  GROUP BY Language_Bucket
-  ORDER BY Avg_Rating DESC;
-- Insight: Apps supporting 10–30 languages have the highest average ratings.
----
-- **Genres with Low Ratings**:
-   ```sql
-      SELECT prime_genre, AVG(user_rating) AS Average_Rating
-      FROM AppleStore
-      GROUP BY prime_genre
-      ORDER BY Average_Rating ASC
-      LIMIT 10;
-- Insight: Finance and Book apps have the lowest average ratings, presenting opportunities for improvement.
----
-- **Top Rated Apps Per Genre**:
-   ```sql
-   WITH RankedApps AS
-    ( SELECT prime_genre, track_name, user_rating, ROW_NUMBER()
-   OVER (PARTITION BY prime_genre ORDER BY user_rating DESC) AS Rank
-   FROM AppleStore )
-   SELECT prime_genre, track_name, user_rating
-    FROM RankedApps
-    WHERE Rank = 1;
- - Result: Identified the highest-rated app for each genre.
----
-- **Correlation Between Description Length and Ratings:**:
-   ```sql
-  SELECT CASE
-         WHEN LENGTH(app_desc) < 500 THEN 'Short'
-         WHEN LENGTH(app_desc) BETWEEN 500 AND 1000 THEN 'Medium'
-         ELSE 'Long'
-       END AS description_length_bucket, 
-       AVG(user_rating) AS Average_Rating
-      FROM AppleStore AS A
-      JOIN appleStore_description_combined AS B ON A.id = B.id
-      GROUP BY description_length_bucket
-      ORDER BY Average_Rating DESC;
- - Insight: Apps with longer descriptions tend to have better ratings.
+- A single page report was created on Power BI Desktop & it was then published to Power BI Service.
 
----
+Following inferences can be drawn from the dashboard;
 
-## Final Recommendations
-1. **Paid Apps Perform Better**: Developers should consider offering premium features to justify a paid app model.
-2. **Language Support Matters**: Supporting **10–30 languages** can significantly enhance user ratings and reach.
-3. **Opportunity in Low-Rated Genres**: Focus on **Finance** and **Book** apps to address gaps in user satisfaction.
-4. **Leverage Long Descriptions**: Create detailed and engaging app descriptions to improve user ratings.
-5. **Aim for Ratings Above 3.5**: Ensure that a new app meets the average threshold for success.
-6. **Games and Entertainment Are Saturated**: While these genres are competitive, they offer a huge user base for innovative apps.
+### [1] Total Revenue and Sales Quantity
 
----
+    Total Revenue: ₹984.88M
+    Total Sales Quantity: 2M units
 
-## 🛠 Tools and Technologies
-- **SQL Database**: SQLite
-- **Querying Tool**: SQLiteOnline
-- **Dataset Source**: [Kaggle](https://www.kaggle.com)
-- **Languages**: SQL
+- Insight: Revenue and sales are distributed across multiple markets and customers, with significant contributions from top-performing regions and clients.
 
----
+![1](https://github.com/user-attachments/assets/d2c12dd6-3032-46e8-962d-1e4bf2505b9f)
+         
+### [2] Revenue by Markets
 
-## 📬 Contact
-- **Author**: Pranav Grover
-- **Email**: [pranav.grover@utdallas.edu](mailto:pranav.grover@utdallas.edu)  
-- **GitHub**: [Pranav Grover](https://github.com/Pranav0520)
+   - Top Revenue-Generating Markets:
+
+    -Delhi NCR: ₹519.58M (52.74%)
+    -Mumbai: ₹150.08M (15.23%)
+    -Ahmedabad: ₹132.31M (13.44%)
+    -Bhopal: ₹58.61M (5.94%)
+    -Nagpur: ₹55.03M (5.59%)
+
+   - Low Revenue Markets:
+
+    -Kochi: ₹18.11M (1.84%)
+    -Chennai: ₹18.04M (1.83%)
+    -Bengaluru: ₹0.37M (0.03%)
+
+- Insight: Delhi NCR generates over half of the total revenue, making it the most critical market, while Bengaluru and Kochi show room for growth.
+
+![2](https://github.com/user-attachments/assets/d4e11b30-0805-4406-8225-15503166aaec)
+  
+### [3] Sales by Markets
+  
+  - Top Sales Markets:
+
+        -Delhi NCR: 988K units (49.4%)
+        -Mumbai: 384K units (19.2%)
+        -Nagpur: 262K units (13.1%)
+        -Kochi: 255K units (12.8%)
+        -Ahmedabad: 207K units (10.4%)
+    
+- Insight: Delhi NCR also leads in sales quantity, indicating high demand and engagement in this market.
+
+![3](https://github.com/user-attachments/assets/fdd18929-2082-45bc-8a7a-71b0a18bddf6)
+
+ ### [4] Revenue Trends
+ 
+    -Peak Revenue Period: Mid-2018 with monthly revenue reaching ₹40M.
+    -Lowest Revenue Period: Late 2019 with monthly revenue dropping to ₹10M.
+
+- Insight: The sharp revenue decline after mid-2018 may require analysis to identify the reasons and replicate successful strategies from the peak period.
+
+![4](https://github.com/user-attachments/assets/fe058def-1e6d-4bf0-8166-aade25a646c2)
+
+ ### [5] Top Customers
+ 
+    -Electricalsara Stores: ₹413.33M (41.97%)
+    -Electricalytical: ₹49.64M (5.04%)
+    -Excel Stores: ₹49.12M (4.99%)
+    -Premium Stores: ₹44.97M (4.57%)
+    -Nixon: ₹43.89M (4.46%)
+    
+- Insight: Electricalsara Stores dominates revenue contributions, making it a key customer to prioritize and retain.
+
+![5](https://github.com/user-attachments/assets/58557fa5-a5e3-4398-8e2c-bf0cde11351f)
+         
+### [6] Top Products
+
+    -(Blank): ₹468.96M (47.63%)
+    -Prod040: ₹23.58M (2.39%)
+    -Prod159: ₹17.66M (1.79%)
+    -Prod005: ₹16.26M (1.65%)
+    -Prod018: ₹15.6M (1.58%)
+    
+- Insight: A significant portion of revenue falls under the "(Blank)" category, which requires data validation to ensure accurate reporting.
+
+![6](https://github.com/user-attachments/assets/4f5664cf-c896-46af-a8ff-9a8833dabdde)
+
+### [7] Other Insights
+
+- Revenue Contribution by Market:
+    -Top 3 Markets (Delhi NCR, Mumbai, Ahmedabad) contribute 81.41% of the total revenue.
+    -Remaining markets contribute less than 20%.
+- Product Performance:
+    -While specific products contribute steadily to revenue, the missing product name issue affects visibility and requires immediate attention.
+- Customer Dependency:
+    -The top customer (Electricalsara Stores) alone accounts for over 40% of the total revenue. Diversifying the customer base can reduce revenue dependency on a single client.
+
+# Report Snapshot (Power BI DESKTOP)
+
+![Screenshot 2024-12-13 163709](https://github.com/user-attachments/assets/aeab5037-d36d-465c-9039-e27543a916c5)
+
+### Recommendations:
+
+- Strengthen Top Markets: Focus on Delhi NCR and Mumbai to maintain and increase revenue.
+- Investigate Data Gaps: Resolve the "(Blank)" product issue to ensure accurate reporting and uncover potential revenue sources.
+- Boost Low-Performing Markets: Create targeted campaigns for markets like Kochi, Chennai, and Bengaluru to increase revenue share.
+- Customer Retention: Build loyalty programs for Electricalsara Stores and other high-value customers to ensure long-term revenue stability.
+- Analyze Peak Trends: Investigate factors behind the revenue peak in mid-2018 to replicate those strategies in future campaigns.
